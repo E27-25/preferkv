@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "preferkv"
+version = "0.1.0"
+description = "Prefix-aware caching with PREFER (frequency+branchiness) eviction and a workload advisor for LLM serving."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "The preferkv authors" }]
+keywords = ["llm", "kv-cache", "prefix-caching", "cache-eviction", "sglang", "vllm", "radix"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+preferkv = "preferkv.cli:main"
+
+# Before publishing to PyPI, add your repository:
+# [project.urls]
+# Homepage = "https://github.com/<you>/preferkv"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["preferkv*"]
+
+[tool.setuptools.package-data]
+preferkv = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
