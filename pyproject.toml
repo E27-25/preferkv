@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "preferkv"
-version = "0.1.0"
+version = "0.2.0"
 description = "Prefix-aware caching with PREFER (frequency+branchiness) eviction and a workload advisor for LLM serving."
 readme = "README.md"
 requires-python = ">=3.8"

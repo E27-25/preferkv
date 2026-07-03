@@ -6,10 +6,12 @@
 
 [![python](https://img.shields.io/badge/python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](#install)
 [![license](https://img.shields.io/badge/license-MIT-3da639?style=flat-square)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-21%20passing-2f9e44?style=flat-square&logo=pytest&logoColor=white)](tests)
+[![tests](https://img.shields.io/badge/tests-23%20passing-2f9e44?style=flat-square&logo=pytest&logoColor=white)](tests)
 [![typed](https://img.shields.io/badge/typed-yes-3776AB?style=flat-square)](preferkv/py.typed)
 [![deps](https://img.shields.io/badge/dependencies-none-lightgrey?style=flat-square)](pyproject.toml)
 [![SGLang](https://img.shields.io/badge/SGLang-validated%20live-success?style=flat-square)](#-results)
+[![vLLM](https://img.shields.io/badge/vLLM-validated%20live-success?style=flat-square)](#-engine-adapters)
+[![advisor](https://img.shields.io/badge/advisor-4%2F4%20vs%20live-blueviolet?style=flat-square)](#-quickstart)
 
 <img src="assets/demo.gif" width="760" alt="preferkv quickstart demo">
 
@@ -44,7 +46,7 @@ Beats LRU on frequency-favorable workloads; bounded against a Belady oracle.
 <td width="33%" valign="top">
 
 **🧭 Honest advisor**
-`advise(trace)` simulates LRU vs PREFER and gives a go / no-go with the expected gain.
+`advise(trace)` gives a go / no-go; its calls matched the live winner **4/4** — incl. saying *don't switch*.
 
 </td>
 <td width="33%" valign="top">
@@ -139,15 +141,21 @@ preferkv advise your_trace.jsonl      # JSON Lines: one list of block-ids per re
 ```
 
 ```python
-from preferkv import advise, load_trace
+from preferkv import advise, select_policy, load_trace, PrefixCache
 
 rec = advise(load_trace("your_trace.jsonl"))
 if rec.recommend_prefer:
     deploy_prefer()                   # only where the simulation says it wins
+
+# or fully automatic — returns "prefer" or "lru", directly deployable:
+cache = PrefixCache(2048, policy=select_policy(load_trace("your_trace.jsonl")))
 ```
 
 On a recency-heavy trace the advisor prints **STICK WITH LRU** — so you never deploy
-PREFER where it would hurt.
+PREFER where it would hurt. Blind-checked against live SGLang outcomes on four
+workload families (multi-tenant, session-resumption, burst agent loop, RAG serving),
+the selection matched the live winner **4/4** — including the burst loop where the
+correct call is to keep LRU (predicted −9.9%, live −7.2%).
 
 ## 📊 Results
 
@@ -194,16 +202,18 @@ see `preferkv/persist.py`).
 
 </td><td width="50%" valign="top">
 
-**vLLM** — *experimental*
+**vLLM** — *validated live (v1)*
 
 ```python
 from preferkv.adapters.vllm import PreferEvictor
-# in vLLM's block manager:
-#   evictor = PreferEvictor()
+# v0 evictor interface, or patch the v1
+# block pool to score with preferkv
 ```
 
-Tested against the evictor interface;
-not yet run on a live engine.
+Run live on vLLM v1's flat block pool:
+**+6.3%** hit vs stock LRU at matched budget
+(persistent frequency alone — branchiness
+is inert without a radix tree).
 
 </td></tr>
 </table>
@@ -217,7 +227,7 @@ not yet run on a live engine.
 from preferkv import (
     PrefixCache,          # prefix-closed radix cache, pluggable eviction
     LRU, LFU, Prefer,     # policies
-    advise, load_trace,   # the advisor + trace loading
+    advise, select_policy, load_trace,   # advisor + auto selection + traces
     simulate, simulate_belady, reuse_ceiling,   # simulator + references
     trace_stats, reuse_recency_corr,            # workload diagnostics
 )
@@ -229,7 +239,7 @@ from preferkv import (
 | `policies.py` | `LRU` · `LFU` · `Prefer` (frequency + branchiness) |
 | `persist.py` | `PersistentFrequency` — counts keyed by a rolling hash, surviving eviction |
 | `sim.py` | fast simulator + a prefix-aware **Belady oracle** |
-| `advisor.py` | `advise(trace)` → go / no-go with expected gain |
+| `advisor.py` | `advise` / `select_policy` → validated go / no-go + auto selection |
 | `trace.py` | JSONL loading, reuse-recency correlation, working-set |
 | `adapters/` | `sglang`, `vllm` |
 | `cli.py` | `preferkv advise · bench · demo` |

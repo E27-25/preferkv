@@ -19,3 +19,17 @@ def test_reuse_recency_corr_orders_workloads():
     burst = reuse_recency_corr(make_burst(seed=0))
     multi = reuse_recency_corr(make_multitenant(seed=0))
     assert burst > multi                   # burst is the recency-heavy extreme
+
+
+def test_select_policy_auto_selection():
+    from preferkv import select_policy, PrefixCache
+    assert select_policy(make_multitenant(seed=0)) == "prefer"
+    assert select_policy(make_burst(seed=0)) == "lru"
+    # the returned string is directly deployable
+    cache = PrefixCache(capacity=8, policy=select_policy(make_multitenant(seed=0)))
+    assert cache.access([1, 2, 3]) == 0
+
+
+def test_recommended_policy_matches_recommend_prefer():
+    rec = advise(make_multitenant(seed=0))
+    assert rec.recommended_policy == ("prefer" if rec.recommend_prefer else "lru")
