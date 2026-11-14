@@ -13,7 +13,7 @@ Two levels of the win:
   box; gives the smaller "stock-engine" gain.
 * **Full win (persistent frequency).** The larger, robust gain needs frequency that
   survives eviction. That is a small change to the radix cache's insert path (a
-  global prefix->count map); see the project's ``radix_cache.py`` patch. Without it,
+  global prefix->count map); see ``patches/sglang-v0.5.18-prefer.patch`` in the repository. Without it,
   PREFER still runs, just with less signal.
 
 This targets SGLang's ``srt.mem_cache.evict_policy`` layout; if that module moves,

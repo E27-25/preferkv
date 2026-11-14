@@ -24,9 +24,9 @@ dev = ["pytest>=7"]
 [project.scripts]
 preferkv = "preferkv.cli:main"
 
-# Before publishing to PyPI, add your repository:
-# [project.urls]
-# Homepage = "https://github.com/<you>/preferkv"
+[project.urls]
+Homepage = "https://github.com/E27-25/preferkv"
+Paper = "https://github.com/E27-25/preferkv/blob/main/paper/PREFER_iSAI-NLP2026.pdf"
 
 [tool.setuptools.packages.find]
 where = ["."]

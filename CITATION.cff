@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use preferkv or PREFER, please cite the paper below."
+title: "preferkv"
+type: software
+license: MIT
+repository-code: "https://github.com/E27-25/preferkv"
+authors:
+  - family-names: Promfiy
+    given-names: Watin
+  - family-names: Sirikayon
+    given-names: Chaloemphon
+  - family-names: Tuwanut
+    given-names: Panwit
+  - family-names: Poomrittigul
+    given-names: Suvit
+preferred-citation:
+  type: conference-paper
+  title: "PREFER: Persistent-Frequency KV-Cache Eviction for LLM Prefix Caching"
+  authors:
+    - family-names: Promfiy
+      given-names: Watin
+    - family-names: Sirikayon
+      given-names: Chaloemphon
+    - family-names: Tuwanut
+      given-names: Panwit
+    - family-names: Poomrittigul
+      given-names: Suvit
+  collection-title: "Proceedings of the International Joint Symposium on Artificial Intelligence and Natural Language Processing (iSAI-NLP 2026)"
+  publisher:
+    name: IEEE
+  year: 2026

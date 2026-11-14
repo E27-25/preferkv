@@ -2,232 +2,256 @@
 
 # ⚡ preferkv
 
-### Prefix-aware KV-cache eviction that beats LRU — with an advisor that tells you *when it actually will*.
+### Persistent-frequency KV-cache eviction for LLM prefix caching, with drop-in patches for SGLang and vLLM
 
-[![python](https://img.shields.io/badge/python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](#install)
+**PREFER** keeps the prefixes your traffic actually reuses, remembers how often they were used even after they are evicted, and comes with an advisor that tells you **when it beats LRU and when it doesn't**.
+
+<a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="https://img.shields.io/badge/paper-iSAI--NLP%202026-b31b1b?style=for-the-badge&logo=ieee&logoColor=white" alt="Paper: iSAI-NLP 2026"></a>
+<a href="#-engine-integration"><img src="https://img.shields.io/badge/SGLang-v0.5.18-ff6f00?style=for-the-badge" alt="SGLang v0.5.18"></a>
+<a href="#-engine-integration"><img src="https://img.shields.io/badge/vLLM-v0.24.0-30a2ff?style=for-the-badge" alt="vLLM v0.24.0"></a>
+
+[![CI](https://github.com/E27-25/preferkv/actions/workflows/ci.yml/badge.svg)](https://github.com/E27-25/preferkv/actions/workflows/ci.yml)
+[![python](https://img.shields.io/badge/python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](#-install)
 [![license](https://img.shields.io/badge/license-MIT-3da639?style=flat-square)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-23%20passing-2f9e44?style=flat-square&logo=pytest&logoColor=white)](tests)
+[![deps](https://img.shields.io/badge/core%20dependencies-none-lightgrey?style=flat-square)](pyproject.toml)
 [![typed](https://img.shields.io/badge/typed-yes-3776AB?style=flat-square)](preferkv/py.typed)
-[![deps](https://img.shields.io/badge/dependencies-none-lightgrey?style=flat-square)](pyproject.toml)
-[![SGLang](https://img.shields.io/badge/SGLang-validated%20live-success?style=flat-square)](#-results)
-[![vLLM](https://img.shields.io/badge/vLLM-validated%20live-success?style=flat-square)](#-engine-adapters)
-[![advisor](https://img.shields.io/badge/advisor-4%2F4%20vs%20live-blueviolet?style=flat-square)](#-quickstart)
 
 <img src="assets/demo.gif" width="760" alt="preferkv quickstart demo">
 
-<sub><a href="#-why">Why</a> · <a href="#-how-it-works">How it works</a> · <a href="#-quickstart">Quickstart</a> · <a href="#-results">Results</a> · <a href="#-engine-adapters">Adapters</a> · <a href="#-api">API</a></sub>
+<sub>
+<a href="#-tldr">TL;DR</a> ·
+<a href="#-how-it-works">How it works</a> ·
+<a href="#-which-policy-should-i-use">Which policy?</a> ·
+<a href="#-install">Install</a> ·
+<a href="#-quickstart">Quickstart</a> ·
+<a href="#-engine-integration">SGLang / vLLM</a> ·
+<a href="#-results">Results</a> ·
+<a href="#-paper">Paper</a> ·
+<a href="#-citation">Cite</a>
+</sub>
 
 </div>
 
 ---
 
-LLM serving engines (vLLM, SGLang) cache attention **KV blocks** in a prefix/radix tree
-and evict by **Least Recently Used (LRU)**. LRU is far from optimal when popular content
-returns after long gaps. **preferkv** evicts by *frequency + branchiness* instead of
-recency — and counts that frequency **persistently across evictions**, the detail that
-makes it actually work on a live engine.
+> [!NOTE]
+> 🎉 **Accepted at iSAI-NLP 2026** (IEEE, Nov 19–21, 2026).
+> 📄 Paper: [**PREFER: Persistent-Frequency KV-Cache Eviction for LLM Prefix Caching**](paper/PREFER_iSAI-NLP2026.pdf)
 
-> [!IMPORTANT]
-> **Honest by design.** PREFER is *not* universally better — it wins on multi-tenant
-> shared-template serving and agent session-resumption, and **loses** on tight,
-> recency-heavy agent loops. The built-in **advisor** measures your workload and refuses
-> to recommend PREFER where it would hurt.
+## 🧭 TL;DR
 
-## ✨ Highlights
+vLLM and SGLang cache attention KV blocks for shared prompt prefixes and evict them **least-recently-used (LRU)** by default. On real LLM traffic that is often the wrong choice:
 
-<table>
-<tr>
-<td width="33%" valign="top">
-
-**🎯 Up to 2× hit rate**
-Beats LRU on frequency-favorable workloads; bounded against a Belady oracle.
-
-</td>
-<td width="33%" valign="top">
-
-**🧭 Honest advisor**
-`advise(trace)` gives a go / no-go; its calls matched the live winner **4/4** — incl. saying *don't switch*.
-
-</td>
-<td width="33%" valign="top">
-
-**🔌 Drop-in adapters**
-SGLang (validated live) and vLLM (experimental) — no fork, no rebuild.
-
-</td>
-</tr>
-<tr>
-<td valign="top">
-
-**📦 Zero dependencies**
-Pure standard-library core. `pip install` and go.
-
-</td>
-<td valign="top">
-
-**🧪 Tested & typed**
-21 tests, `py.typed`, CI on 3.9–3.12.
-
-</td>
-<td valign="top">
-
-**⚙️ Engine-accurate**
-Prefix-closed radix cache with lazy-heap eviction, matching real engines.
-
-</td>
-</tr>
-</table>
-
-## 🤔 Why
-
-A hot prefix is reused *often* but not necessarily *recently*. Between its reuses, a
-stream of unique **one-shot** content floods the cache. LRU evicts the hot prefix (it
-looks "old"); PREFER keeps it because it is *frequent* — and remembers that frequency
-even after the block was evicted once. A stock engine forgets it, which is why plain
-frequency eviction barely helps until you make it **persistent**.
+- 🔁 **Most blocks are one-shot.** About ¾ of the blocks in the production traces are never reused. LRU keeps each new one because it was just used, and pushes out a popular prefix to make room.
+- 🧠 **Frequency fixes this, but only if it is remembered.** A count that resets on eviction (the LFU built into the engines) behaves almost like LRU when reuse is far apart. PREFER keeps counts **across evictions**, and that is the part that matters.
+- 📈 **Results:**
+  - In simulation, the searched frequency policy closes **14–27%** of the gap between LRU and a Belady reference, and reaches **1.9×** LRU's hit rate on conversation traffic.
+  - Live, frequency eviction gains **+25–31%** hit rate on SGLang.
+  - It also carries over to vLLM, and gives **up to +10.5% throughput** on an 8B model under load.
+- 🚦 **It isn't always better.** On tight agent loops LRU wins (**−7% to −15%**). The built-in **advisor** simulates your workload and recommends PREFER only where it helps. It made the right call on **4 of 4** live workload families.
 
 ## 🧠 How it works
 
 <div align="center">
-<img src="assets/mechanism.gif" width="760" alt="Animated — LRU drops the hot prefix (MISS); PREFER keeps it (HIT)">
+<img src="assets/mechanism.gif" width="760" alt="Animated: LRU drops the hot prefix (MISS); PREFER keeps it (HIT)">
 </div>
 
 ```text
-score(node) = log(1 + frequency) + 0.9 · log(1 + branchiness)      # recency breaks ties
+score(node) = log(1 + persistent_frequency) + 0.9 · log(1 + branchiness)     # recency breaks ties
+evict       = the cached leaf with the lowest score
 ```
 
-Eviction removes the lowest-scoring cached leaf. **LRU and LFU are the axis-aligned
-special cases** of the same family. The workflow:
+- **Persistent frequency** is how often a prefix was used, kept in a side table keyed by a rolling hash of the prefix tokens. Evicting the block does **not** reset its count, so a popular prefix that was dropped once is protected the next time it comes back.
+- **Prefix-safe.** Every use of a block is also a use of its ancestors, so a parent's count is always at least its child's. The most frequent blocks therefore form a valid prefix tree, and evicting leaves alone can maintain it.
+- **Cheap.** The library picks victims with a lazy min-heap, O(log n) per access. The engine patches add one rolling hash and one table update per inserted node. A bounded table costs 16 B per entry and loses ≤ 2.1% hit rate at 8× the cache size.
+
+> [!TIP]
+> In the paper's ablation, persistent frequency is what drives the gain. The other terms barely matter: changing the branchiness weight over [0, 3] moves the hit rate by ≤ 5.4%. Inside the engines, only childless leaves can be evicted, so branchiness is the same for every candidate there. **Live PREFER is persistent LFU with recency breaking ties.**
+
+## 🚦 Which policy should I use?
 
 ```mermaid
-flowchart LR
-    T[your request trace] --> ADV{preferkv advise}
-    ADV -->|frequency-favorable| P[deploy PREFER]
-    ADV -->|recency-heavy| L[keep LRU]
-    P --> ENG[SGLang / vLLM adapter]
-    ENG --> R[higher hit rate]
-    classDef win fill:#e6f4ea,stroke:#2f9e44,color:#14532d;
-    classDef neu fill:#f1f3f5,stroke:#adb5bd,color:#343a40;
-    class P,R,ENG win
-    class L neu
+flowchart TD
+    A([Your serving workload]) --> B{"preferkv advise trace.jsonl"}
+    B -->|"recency-heavy<br/>(tight agent loops)"| L["Keep LRU<br/>(engine default)"]
+    B -->|frequency-favorable| C{"How far apart are<br/>reuses of a prefix?"}
+    C -->|"tens of requests<br/>(fits in cache residence time)"| S["Turn on the engine's built-in LFU<br/>SGLang: --radix-eviction-policy lfu"]
+    C -->|"hundreds to thousands of requests<br/>(production-trace regime)"| P["PREFER: persistent frequency<br/>apply the engine patch in patches/"]
+    classDef keep fill:#f1f3f5,stroke:#868e96,color:#212529;
+    classDef good fill:#e7f5ff,stroke:#1c7ed6,color:#0b3d91;
+    classDef best fill:#ebfbee,stroke:#2f9e44,color:#14532d;
+    class L keep
+    class S good
+    class P best
 ```
+
+> [!IMPORTANT]
+> **What the paper found.** On the constructed live workloads, prefixes come back within tens of requests. There, SGLang's built-in LFU (off by default) already gets **+25–29%**, and persistence adds no significant further gain. Persistence matters at **production-trace reuse distances** (90th percentile above 1,600 requests). That regime is shown in simulation, because a 16 GB GPU cannot hold production-scale working sets. Turning on the engine's existing LFU is a good first step; PREFER is the version that still works when reuses are far apart.
 
 ## 📦 Install
 
 ```bash
-pip install -e .          # from this repo — no dependencies, Python 3.8+
+pip install git+https://github.com/E27-25/preferkv     # pure Python, no dependencies, Python 3.8+
 ```
+
+or, from a clone, `pip install -e ".[dev]"`.
 
 ## 🚀 Quickstart
 
-**1 — Use the cache** (blocks are any hashable: KV-block ids, token ids, prompt-chunk hashes):
+**1. Ask the advisor first** (needs no GPU). The input is a JSON Lines file with one list of block ids per request:
+
+```bash
+preferkv demo                         # built-in demo, no data needed
+preferkv advise your_trace.jsonl      # → USE PREFER  /  STICK WITH LRU
+```
+
+```text
+multi-tenant (frequency-favorable): corr=0.67  gain=+75.8%  -> USE PREFER
+agent burst  (recency-favorable)  : corr=0.89  gain= -9.1%  -> STICK WITH LRU
+```
+
+**2. Use it from Python:**
 
 ```python
-from preferkv import PrefixCache
+from preferkv import PrefixCache, advise, select_policy, load_trace
 
-cache = PrefixCache(capacity=2048, policy="prefer")   # or "lru" / "lfu"
-hit_len = cache.access([12, 45, 9, 88])   # number of leading blocks served from cache
+trace = load_trace("your_trace.jsonl")
+print(advise(trace))                                   # go / no-go + expected gain
+
+cache = PrefixCache(capacity=2048, policy=select_policy(trace))   # "prefer" or "lru"
+hit_len = cache.access([12, 45, 9, 88])                # leading blocks served from cache
 
 # ...or as a keyed application cache
 cache.put(["sys-prompt", "few-shot", "q42"], value=expensive_state)
 state = cache.get(["sys-prompt", "few-shot", "q42"])
 ```
 
-**2 — Ask the advisor whether PREFER helps your workload** (the part with real impact):
-
-```bash
-preferkv demo                         # built-in demo, no data needed
-preferkv advise your_trace.jsonl      # JSON Lines: one list of block-ids per request
-```
+**3. Compare against references** (simulator):
 
 ```python
-from preferkv import advise, select_policy, load_trace, PrefixCache
-
-rec = advise(load_trace("your_trace.jsonl"))
-if rec.recommend_prefer:
-    deploy_prefer()                   # only where the simulation says it wins
-
-# or fully automatic — returns "prefer" or "lru", directly deployable:
-cache = PrefixCache(2048, policy=select_policy(load_trace("your_trace.jsonl")))
+from preferkv import simulate, simulate_belady, reuse_ceiling
+simulate(trace, 2048, "lru"), simulate(trace, 2048, "prefer"), simulate_belady(trace, 2048)
 ```
 
-On a recency-heavy trace the advisor prints **STICK WITH LRU** — so you never deploy
-PREFER where it would hurt. Blind-checked against live SGLang outcomes on four
-workload families (multi-tenant, session-resumption, burst agent loop, RAG serving),
-the selection matched the live winner **4/4** — including the burst loop where the
-correct call is to keep LRU (predicted −9.9%, live −7.2%).
+## 🔌 Engine integration
+
+<table>
+<tr>
+<th width="50%">🟠 SGLang <code>v0.5.18</code></th>
+<th width="50%">🔵 vLLM <code>v0.24.0</code> (V1 engine)</th>
+</tr>
+<tr>
+<td valign="top">
+
+```bash
+pip install "sglang==0.5.18" \
+  git+https://github.com/E27-25/preferkv
+cd <site-packages>
+git apply -p2 patches/sglang-v0.5.18-prefer.patch
+
+python -m sglang.launch_server \
+  --model-path Qwen/Qwen2.5-1.5B-Instruct \
+  --radix-eviction-policy lfu
+```
+
+What the patch changes:
+- `radix_cache.py` gets a persistent prefix-to-count map.
+- `LFUStrategy` scores nodes with PREFER.
+
+Live: **+25–31%** hit rate over LRU (8 seeds). An earlier build gave +31% on Qwen3 0.6B–8B.
+
+</td>
+<td valign="top">
+
+```bash
+pip install "vllm==0.24.0" \
+  git+https://github.com/E27-25/preferkv
+cd <site-packages>
+git apply -p1 patches/vllm-v0.24.0-block-pool-prefer.patch
+
+vllm serve Qwen/Qwen2.5-0.5B-Instruct \
+  --enable-prefix-caching
+```
+
+What the patch changes:
+- `v1/core/block_pool.py` picks eviction victims by persistent frequency, with LRU order breaking ties.
+
+Live: **+6.3%** hit rate over vLLM's LRU, at neutral latency.
+
+</td>
+</tr>
+</table>
+
+Step-by-step instructions are in [`patches/README.md`](patches/README.md). The Python adapters (`preferkv.adapters.sglang`, `preferkv.adapters.vllm`) expose the same scoring functions, so you can wire PREFER into other releases.
 
 ## 📊 Results
 
-**In simulation** — multi-tenant workload, LRU vs PREFER vs the Belady-oracle ceiling:
+All numbers are from the [paper](paper/PREFER_iSAI-NLP2026.pdf).
+
+### Live on SGLang: 8 seeds, 95% confidence intervals
 
 <div align="center">
-<img src="assets/results.png" width="720" alt="LRU vs PREFER hit rate with Belady-oracle ceiling">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/live_sglang_dark.png">
+  <img src="assets/live_sglang_light.png" width="820" alt="Grouped bar chart of hit-rate change vs LRU for SGLang's built-in LFU and PREFER on six workloads: about +25 to +31% on multi-tenant and resumption, -15% and -7% on the burst loop">
+</picture>
 </div>
 
-**Live on SGLang** — PREFER run *in-engine* (shipped adapter, verified loaded), Qwen3:
+<details>
+<summary><b>Table view</b> (Table IV: SGLang v0.5.18, Qwen2.5-1.5B, concurrency 1)</summary>
+
+| workload, KV budget | LRU hit | stock LFU | **PREFER** | PREFER mean TTFT ↓ | PREFER p99 TTFT ↓ | PREFER throughput |
+|:--|:--:|:--:|:--:|:--:|:--:|:--:|
+| multi-tenant 20k | .410 | +29.0 ± 3.6 | **+30.5 ± 4.7** | +16.6 ± 7.1 | +3.7 ± 5.1 | +7.2 ± 6.8 |
+| multi-tenant 24k | .454 | **+26.0 ± 3.6** | +25.4 ± 4.4 | +12.8 ± 2.3 | +4.5 ± 2.6 | +2.6 ± 1.8 |
+| resumption 6k | .367 | **+27.9 ± 1.9** | +27.3 ± 1.9 | −0.3 ± 1.3 | +2.5 ± 6.2 | +1.7 ± 1.6 |
+| resumption 8k | .410 | **+25.1 ± 3.0** | +24.9 ± 3.1 | +1.1 ± 1.2 | +2.3 ± 4.3 | +1.5 ± 1.5 |
+| burst loop 6k | .854 | −15.3 ± 1.8 | −15.3 ± 1.8 | −0.9 ± 2.9 | −3.3 ± 16.1 | +0.7 ± 1.3 |
+| burst loop 8k | .877 | −7.4 ± 0.7 | −7.4 ± 0.7 | −1.4 ± 2.6 | −0.2 ± 9.1 | +0.5 ± 1.7 |
+
+The table shows relative change vs LRU in %. Positive is better.
+
+</details>
+
+### Simulation on production traces (Mooncake, held-out data)
+
+| trace / capacity | LRU | ARC | LIRS | LFU, in-cache | **LFU, persistent** | **PREFER** | Belady ref. |
+|:--|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| conversation, 2k blocks | .052 | .055 | .062 | .055 | .099 | .095 | .236 |
+| conversation, 4k blocks | .079 | .085 | .135 | .082 | .133 | .134 | .286 |
+| tool/agent, 2k blocks | .365 | .367 | .376 | .367 | .395 | .393 | .498 |
+| tool/agent, 4k blocks | .387 | .391 | .428 | .387 | .425 | .425 | .531 |
+
+The table shows token hit rate. Counts that reset on eviction (in-cache LFU, ARC) stay close to LRU. Counts that **persist** (persistent LFU, PREFER) pull clearly ahead.
+
+### Beyond one engine
+
+| setting | result |
+|:--|:--|
+| 🔵 vLLM V1, flat block pool | **+6.3%** hit rate vs LRU, neutral latency |
+| 🩺 Retrieval-augmented VLM app, skewed serving stream | **+14.5%** hit rate (simulator agrees within 0.5 points) |
+| 🏋️ Qwen3-8B (FP8) under load, concurrency 1 → 32 | hit-rate gain stays at +9–10%; throughput gain grows from **+3.9% → +10.5%** |
+| 🧭 Advisor vs live outcome | **4 / 4** correct decisions, including "keep LRU" on the burst loop |
+
+<details>
+<summary><b>Library simulator on a synthetic multi-tenant workload</b></summary>
 
 <div align="center">
-
-| Qwen3 model | prefix-cache hit vs LRU | throughput |
-|:--|:--:|:--:|
-| Qwen3-0.6B | **+31%** | +4% |
-| Qwen3-1.7B | **+31%** | +5% |
-| Qwen3-4B | **+31%** | **+10%** |
-| Qwen3-8B (FP8) | **+31%** | **+9%** |
-
+<img src="assets/results.png" width="720" alt="LRU vs PREFER hit rate on a synthetic multi-tenant workload, with the Belady reference">
 </div>
 
-The hit-rate gain is model-independent (the cache doesn't know the model); the
-latency/throughput payoff **grows with model size** — bigger models make each recomputed
-prefill more expensive. In pure simulation PREFER reaches up to **2×** the LRU hit rate
-on frequency-favorable workloads.
-
-## 🔌 Engine adapters
-
-<table>
-<tr><td width="50%" valign="top">
-
-**SGLang** — *validated live*
-
-```python
-from preferkv.adapters.sglang import enable_prefer
-enable_prefer()
-# launch with:  --radix-eviction-policy lfu
-```
-
-The full gain also needs persistent frequency
-(a small patch to the radix insert path;
-see `preferkv/persist.py`).
-
-</td><td width="50%" valign="top">
-
-**vLLM** — *validated live (v1)*
-
-```python
-from preferkv.adapters.vllm import PreferEvictor
-# v0 evictor interface, or patch the v1
-# block pool to score with preferkv
-```
-
-Run live on vLLM v1's flat block pool:
-**+6.3%** hit vs stock LRU at matched budget
-(persistent frequency alone — branchiness
-is inert without a radix tree).
-
-</td></tr>
-</table>
+</details>
 
 ## 🧩 API
 
 <details>
-<summary><b>Core API & module map</b></summary>
+<summary><b>Core API and module map</b></summary>
 
 ```python
 from preferkv import (
-    PrefixCache,          # prefix-closed radix cache, pluggable eviction
-    LRU, LFU, Prefer,     # policies
-    advise, select_policy, load_trace,   # advisor + auto selection + traces
+    PrefixCache,                                # prefix-closed radix cache, pluggable eviction
+    LRU, LFU, Prefer, PersistentFrequency,      # policies + the persistent count table
+    advise, select_policy, load_trace,          # advisor + auto selection + traces
     simulate, simulate_belady, reuse_ceiling,   # simulator + references
     trace_stats, reuse_recency_corr,            # workload diagnostics
 )
@@ -235,37 +259,74 @@ from preferkv import (
 
 | module | purpose |
 |:--|:--|
-| `cache.py` | `PrefixCache` — prefix-closed radix cache, lazy-heap victim selection |
-| `policies.py` | `LRU` · `LFU` · `Prefer` (frequency + branchiness) |
-| `persist.py` | `PersistentFrequency` — counts keyed by a rolling hash, surviving eviction |
-| `sim.py` | fast simulator + a prefix-aware **Belady oracle** |
-| `advisor.py` | `advise` / `select_policy` → validated go / no-go + auto selection |
-| `trace.py` | JSONL loading, reuse-recency correlation, working-set |
-| `adapters/` | `sglang`, `vllm` |
+| `cache.py` | `PrefixCache`: prefix-closed radix cache with lazy-heap victim selection |
+| `policies.py` | `LRU` · `LFU` · `Prefer` |
+| `persist.py` | `PersistentFrequency`: counts keyed by a rolling hash that survive eviction (optionally bounded: when full, all counts are halved) |
+| `sim.py` | fast simulator, a prefix-aware Belady reference, and the infinite-cache ceiling |
+| `advisor.py` | `advise` / `select_policy`: go / no-go based on simulating your trace |
+| `trace.py` | JSONL loading, reuse-recency correlation, working set |
+| `adapters/` | `sglang` (scoring for `LFUStrategy`), `vllm` (`PreferEvictor`) |
 | `cli.py` | `preferkv advise · bench · demo` |
+| `patches/` | engine patches for SGLang v0.5.18 and vLLM v0.24.0 |
 
 </details>
 
-## ⚠️ Status
+## ⚠️ Limitations
 
-The **core** (cache, policies, persistent frequency, simulator, Belady oracle, advisor)
-is unit-tested and stable. The **SGLang adapter is validated live** on Qwen3 0.6B–8B. The
-**vLLM adapter is experimental**. Single-process, in-memory reference implementation.
+These are the same limitations stated in the paper:
+
+- **Reference, not optimum.** "Gap closed" is measured against a feasible Belady schedule, not a proven optimum.
+- **Hardware.** All live runs used one consumer GPU (RTX 5070 Ti, 16 GB), mostly at concurrency 1. The live workloads are constructed, not replays of the production traces.
+- **Where persistence helps.** At short reuse distances, persistent counts give no significant live gain over per-node counts. The large persistent-vs-in-cache gap is shown in simulation.
+- **Single runs.** The load sweep, the cross-engine runs, and the application results are single runs per configuration.
+- **Scope of the advisor.** It was validated on four workload families. Its predicted magnitudes overestimate live gains: trust its decisions, not its numbers.
+- **LIRS.** LIRS matches PREFER at mid-range capacity, so the advantage over adaptive policies depends on the regime.
+
+## 📄 Paper
+
+<table>
+<tr>
+<td width="34%"><a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper_page1.png" alt="First page of the PREFER paper"></a></td>
+<td valign="top">
+
+**PREFER: Persistent-Frequency KV-Cache Eviction for LLM Prefix Caching**
+
+Watin Promfiy, Chaloemphon Sirikayon\*, Panwit Tuwanut, Suvit Poomrittigul
+<br><sub>School of Information Technology, King Mongkut's Institute of Technology Ladkrabang, Bangkok, Thailand · \*corresponding author</sub>
+
+*International Joint Symposium on Artificial Intelligence and Natural Language Processing* (**iSAI-NLP 2026**), IEEE.
+
+📥 [**Download PDF**](paper/PREFER_iSAI-NLP2026.pdf) (6 pages)
+
+<sub>© 2026 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works.</sub>
+
+</td>
+</tr>
+</table>
+
+## 📝 Citation
+
+```bibtex
+@inproceedings{promfiy2026prefer,
+  title     = {{PREFER}: Persistent-Frequency {KV}-Cache Eviction for {LLM} Prefix Caching},
+  author    = {Promfiy, Watin and Sirikayon, Chaloemphon and Tuwanut, Panwit and Poomrittigul, Suvit},
+  booktitle = {Proceedings of the International Joint Symposium on Artificial Intelligence and Natural Language Processing (iSAI-NLP)},
+  publisher = {IEEE},
+  year      = {2026}
+}
+```
+
+GitHub's **"Cite this repository"** button uses [`CITATION.cff`](CITATION.cff).
 
 ## 🛠️ Development
 
 ```bash
 pip install -e ".[dev]"
-pytest -q
+pytest -q              # 23 tests
 ```
 
-## 📄 Paper
+## 📜 License
 
-The method is described in a paper currently under **double-anonymous review**. A
-citation will be added on publication.
+The code is released under the [MIT](LICENSE) license. The files in [`patches/`](patches) modify Apache-2.0 sources of SGLang and vLLM. The paper PDF is © 2026 IEEE; see the notice above.
 
-## License
-
-[MIT](LICENSE).
-
-<div align="center"><sub>Built for people who serve LLMs and care about cache hit rate.</sub></div>
+<div align="center"><sub>Built for people who serve LLMs and care about every cached token. ⚡</sub></div>

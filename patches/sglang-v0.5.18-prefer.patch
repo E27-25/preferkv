@@ -1,0 +1,86 @@
+--- a/python/sglang/srt/mem_cache/radix_cache.py
++++ b/python/sglang/srt/mem_cache/radix_cache.py
+@@ -235,6 +235,12 @@
+         return hash_value
+ 
+ 
++# [PATCH] persistent per-prefix access frequency, keyed by a rolling hash of the
++# prefix token ids. Unlike per-node hit_count it SURVIVES eviction, so a
++# frequently-evicted-but-popular prefix keeps its count and can be protected.
++_PERSIST_FREQ = defaultdict(int)
++
++
+ class TreeNode:
+ 
+     counter = 0
+@@ -249,6 +255,7 @@
+         self.creation_time = time.monotonic()
+ 
+         self.hit_count = 0
++        self.persist_freq = 0  # [PATCH] persistent access count (survives eviction)
+         # indicating the node is locked to protect from eviction
+         # incremented when the node is referenced by a storage operation
+         self.host_ref_counter = 0
+@@ -745,6 +752,7 @@
+         # Convert None priority to 0
+         if priority is None:
+             priority = 0
++        _ph = 0xCBF29CE484222325  # [PATCH] FNV-1a rolling hash of the prefix tokens
+         access_time = time.monotonic()
+         node.last_access_time = access_time
+         # Update priority along the path (take max to propagate higher priority)
+@@ -760,6 +768,8 @@
+             node.last_access_time = access_time
+             prefix_len = node.key.match(key, page_size=self.page_size)
+             total_prefix_length += prefix_len
++            for _t in node.key.token_ids[:prefix_len]:  # [PATCH] fold matched tokens
++                _ph = ((_ph ^ (int(_t) & 0xFFFFFFFF)) * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
+             key = key[prefix_len:]
+             value = value[prefix_len:]
+ 
+@@ -771,6 +781,8 @@
+             else:
+                 node.priority = max(node.priority, priority)
+                 self._inc_hit_count(node, chunked)
++            _PERSIST_FREQ[_ph] += 1  # [PATCH] persistent access count
++            node.persist_freq = _PERSIST_FREQ[_ph]
+             if len(key):
+                 child_key = key.child_key(self.page_size)
+ 
+@@ -780,6 +792,10 @@
+             new_node.key = key
+             new_node.value = value.clone()
+             self._inc_hit_count(new_node, chunked)
++            for _t in key.raw_token_ids():  # [PATCH] fold new-node tokens (honors key.limit)
++                _ph = ((_ph ^ (int(_t) & 0xFFFFFFFF)) * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
++            _PERSIST_FREQ[_ph] += 1
++            new_node.persist_freq = _PERSIST_FREQ[_ph]
+             node.children[child_key] = new_node
+             self.evictable_size_ += len(key)
+             self._update_leaf_status(node)
+--- a/python/sglang/srt/mem_cache/evict_policy.py
++++ b/python/sglang/srt/mem_cache/evict_policy.py
+@@ -6,6 +6,11 @@
+ if TYPE_CHECKING:
+     from sglang.srt.mem_cache.radix_cache import TreeNode
+ 
++try:  # [PATCH] preferkv: pip install preferkv (or put the repo on PYTHONPATH)
++    from preferkv.adapters.sglang import prefer_priority as _prefer_priority
++except ImportError:
++    _prefer_priority = None
++
+ 
+ class EvictionStrategy(ABC):
+     @abstractmethod
+@@ -19,7 +24,11 @@
+ 
+ 
+ class LFUStrategy(EvictionStrategy):
++    # [PATCH] score with preferkv's PREFER (persistent frequency, recency tie-break)
++    # when the package is importable; otherwise keep SGLang's stock LFU.
+     def get_priority(self, node: TreeNode) -> Tuple[int, float]:
++        if _prefer_priority is not None:
++            return _prefer_priority(node)
+         return (node.hit_count, node.last_access_time)
+ 
+ 

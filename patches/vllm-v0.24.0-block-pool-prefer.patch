@@ -1,0 +1,121 @@
+--- a/vllm/v1/core/block_pool.py
++++ b/vllm/v1/core/block_pool.py
+@@ -30,6 +30,54 @@
+ 
+ logger = init_logger(__name__)
+ 
++# ---------------------------------------------------------------------------
++# preferkv PREFER patch (persistent-frequency eviction for the v1 block pool).
++#
++# Bind-mounted over vllm/v1/core/block_pool.py with the preferkv package mounted
++# read-only at /preferkv_pkg, so the eviction score is computed by the SHIPPED
++# preferkv library (same package as the SGLang runs). vLLM's APC is a flat
++# block-hash map (no radix tree), so the branchiness term is inert here; the
++# active ingredient is persistent frequency + recency tiebreak. Victim
++# selection scans the free queue at eviction time (reference implementation;
++# the library core uses a lazy heap for O(log n)).
++# ---------------------------------------------------------------------------
++import math as _pk_math
++import sys as _pk_sys
++
++if "/preferkv_pkg" not in _pk_sys.path:
++    _pk_sys.path.insert(0, "/preferkv_pkg")
++try:
++    from preferkv.persist import PersistentFrequency as _PkPersist
++
++    print("[preferkv-vllm] using shipped preferkv library (persistent frequency)",
++          flush=True)
++except Exception as _pk_e:  # pragma: no cover - keeps the server bootable
++    print(f"[preferkv-vllm] lib import failed ({_pk_e!r}); using inline fallback",
++          flush=True)
++
++    class _PkPersist:  # identical minimal fallback
++        def __init__(self, cap: int = 1_000_000):
++            self._c: dict = {}
++            self.cap = cap
++
++        def bump(self, k):
++            n = self._c.get(k, 0) + 1
++            self._c[k] = n
++            if len(self._c) > self.cap:
++                self._c = {kk: v >> 1 for kk, v in self._c.items() if v > 1}
++            return n
++
++        def get(self, k):
++            return self._c.get(k, 0)
++
++# Process-wide so counts survive block eviction (the whole point).
++_PK_PERSIST = _PkPersist()
++
++
++def _pk_score(block) -> float:
++    """PREFER priority of a cached block: log1p(persistent frequency)."""
++    return _pk_math.log1p(_PK_PERSIST.get(block.block_hash))
++
+ 
+ class BlockHashToBlockMap:
+     """
+@@ -538,6 +586,8 @@
+                 block_hash_with_group_id
+             )
+         self.cached_block_hash_to_block.insert(block_hash_with_group_id, block)
++        # PREFER: first caching of this prefix counts as its first use.
++        _PK_PERSIST.bump(block_hash_with_group_id)
+ 
+     def get_new_blocks(self, num_blocks: int) -> list[KVCacheBlock]:
+         """Get new blocks from the free block pool.
+@@ -553,7 +603,12 @@
+         if num_blocks > self.get_num_free_blocks():
+             raise ValueError(f"Cannot get {num_blocks} free blocks from the pool")
+ 
+-        ret: list[KVCacheBlock] = self.free_block_queue.popleft_n(num_blocks)
++        # PREFER: with caching enabled, choose eviction victims by persistent
++        # frequency instead of queue (LRU) order.
++        if self.enable_caching:
++            ret: list[KVCacheBlock] = self._prefer_popleft_n(num_blocks)
++        else:
++            ret = self.free_block_queue.popleft_n(num_blocks)
+ 
+         # In order to only iterate the list once, we duplicated code a bit
+         if self.enable_caching:
+@@ -571,6 +626,30 @@
+                     self.metrics_collector.on_block_allocated(block)
+         return ret
+ 
++    def _prefer_popleft_n(self, n: int) -> list[KVCacheBlock]:
++        """PREFER victim selection over the free queue.
++
++        Never-hashed blocks are used first (no eviction cost; stock vLLM keeps
++        them at the head for the same reason). Cached blocks are then evicted in
++        ascending PREFER score = log1p(persistent frequency); queue position
++        (recency order, head = least recent) breaks ties, which is exactly the
++        LRU tiebreak of the library's policy.
++        """
++        free = self.free_block_queue.get_all_free_blocks()
++        if len(free) < n:  # defensive: caller already checked the count
++            return self.free_block_queue.popleft_n(n)
++        chosen: list[KVCacheBlock] = []
++        hashless = [b for b in free if b.block_hash is None]
++        chosen.extend(hashless[:n])
++        need = n - len(chosen)
++        if need > 0:
++            hashed = [(b, i) for i, b in enumerate(free) if b.block_hash is not None]
++            hashed.sort(key=lambda t: (_pk_score(t[0]), t[1]))
++            chosen.extend(b for b, _ in hashed[:need])
++        for b in chosen:
++            self.free_block_queue.remove(b)
++        return chosen
++
+     def _maybe_evict_cached_block(self, block: KVCacheBlock) -> bool:
+         """
+         If a block is cached in `cached_block_hash_to_block`, we reset its hash
+@@ -608,6 +687,9 @@
+             if block.ref_cnt == 0 and not block.is_null:
+                 self.free_block_queue.remove(block)
+             block.ref_cnt += 1
++            # PREFER: a prefix-cache hit is one use of this block's prefix.
++            if block.block_hash is not None:
++                _PK_PERSIST.bump(block.block_hash)
+             if self.metrics_collector:
+                 self.metrics_collector.on_block_accessed(block)
+ 
