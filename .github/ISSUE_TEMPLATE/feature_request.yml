@@ -1,0 +1,16 @@
+name: Feature request or engine port
+description: Suggest an improvement, a new engine version, or a new workload to support
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like?
+      description: For an engine port, name the engine and the release.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is it useful?
+      description: Your workload, the serving setup, or the result you are trying to get.

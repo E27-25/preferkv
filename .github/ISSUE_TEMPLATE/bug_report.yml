@@ -1,0 +1,24 @@
+name: Bug report
+description: Something in preferkv or an engine patch does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you ran, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: A minimal script or command line. Please include the trace format if it is relevant.
+      render: shell
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: preferkv version, Python version, and the engine and version if you use a patch (e.g. SGLang v0.5.18).
+    validations:
+      required: true

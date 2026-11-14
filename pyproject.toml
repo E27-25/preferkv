@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "preferkv"
 version = "0.2.0"
-description = "Prefix-aware caching with PREFER (frequency+branchiness) eviction and a workload advisor for LLM serving."
+description = "Persistent-frequency KV-cache eviction (PREFER) for LLM prefix caching, with SGLang/vLLM patches and a workload advisor."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
