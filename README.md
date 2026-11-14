@@ -10,7 +10,7 @@
 <a href="#-engine-integration"><img src="https://img.shields.io/badge/SGLang-v0.5.18-ff6f00?style=for-the-badge" alt="SGLang v0.5.18"></a>
 <a href="#-engine-integration"><img src="https://img.shields.io/badge/vLLM-v0.24.0-30a2ff?style=for-the-badge" alt="vLLM v0.24.0"></a>
 
-[![CI](https://github.com/E27-25/preferkv/actions/workflows/ci.yml/badge.svg)](https://github.com/E27-25/preferkv/actions/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-23%20passing-2f9e44?style=flat-square&logo=pytest&logoColor=white)](tests)
 [![python](https://img.shields.io/badge/python-3.8+-3776AB?style=flat-square&logo=python&logoColor=white)](#-install)
 [![license](https://img.shields.io/badge/license-MIT-3da639?style=flat-square)](LICENSE)
 [![deps](https://img.shields.io/badge/core%20dependencies-none-lightgrey?style=flat-square)](pyproject.toml)
@@ -18,17 +18,7 @@
 
 <img src="assets/demo.gif" width="760" alt="preferkv quickstart demo">
 
-<sub>
-<a href="#-tldr">TL;DR</a> ·
-<a href="#-how-it-works">How it works</a> ·
-<a href="#-which-policy-should-i-use">Which policy?</a> ·
-<a href="#-install">Install</a> ·
-<a href="#-quickstart">Quickstart</a> ·
-<a href="#-engine-integration">SGLang / vLLM</a> ·
-<a href="#-results">Results</a> ·
-<a href="#-paper">Paper</a> ·
-<a href="#-citation">Cite</a>
-</sub>
+<sub><a href="#-tldr">TL;DR</a> · <a href="#-how-it-works">How it works</a> · <a href="#-which-policy-should-i-use">Which policy?</a> · <a href="#-install">Install</a> · <a href="#-quickstart">Quickstart</a> · <a href="#-engine-integration">SGLang / vLLM</a> · <a href="#-results">Results</a> · <a href="#-paper">Paper</a> · <a href="#-citation">Cite</a></sub>
 
 </div>
 
@@ -72,11 +62,11 @@ evict       = the cached leaf with the lowest score
 
 ```mermaid
 flowchart TD
-    A([Your serving workload]) --> B{"preferkv advise trace.jsonl"}
-    B -->|"recency-heavy<br/>(tight agent loops)"| L["Keep LRU<br/>(engine default)"]
-    B -->|frequency-favorable| C{"How far apart are<br/>reuses of a prefix?"}
-    C -->|"tens of requests<br/>(fits in cache residence time)"| S["Turn on the engine's built-in LFU<br/>SGLang: --radix-eviction-policy lfu"]
-    C -->|"hundreds to thousands of requests<br/>(production-trace regime)"| P["PREFER: persistent frequency<br/>apply the engine patch in patches/"]
+    A[Your serving workload] --> B{preferkv advise}
+    B -->|recency-heavy, tight agent loops| L[Keep LRU, the engine default]
+    B -->|frequency-favorable| C{How far apart are reuses of a prefix?}
+    C -->|tens of requests| S[Turn on the built-in LFU of the engine]
+    C -->|hundreds to thousands of requests| P[PREFER with persistent frequency]
     classDef keep fill:#f1f3f5,stroke:#868e96,color:#212529;
     classDef good fill:#e7f5ff,stroke:#1c7ed6,color:#0b3d91;
     classDef best fill:#ebfbee,stroke:#2f9e44,color:#14532d;
@@ -84,6 +74,8 @@ flowchart TD
     class S good
     class P best
 ```
+
+For SGLang, the built-in LFU is `--radix-eviction-policy lfu`. PREFER needs the engine patch in [`patches/`](patches).
 
 > [!IMPORTANT]
 > **What the paper found.** On the constructed live workloads, prefixes come back within tens of requests. There, SGLang's built-in LFU (off by default) already gets **+25–29%**, and persistence adds no significant further gain. Persistence matters at **production-trace reuse distances** (90th percentile above 1,600 requests). That regime is shown in simulation, because a 16 GB GPU cannot hold production-scale working sets. Turning on the engine's existing LFU is a good first step; PREFER is the version that still works when reuses are far apart.
