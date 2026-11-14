@@ -7,6 +7,7 @@
 </defs>
 <g transform="translate(0 0) scale(1.0)">
   <rect width="120" height="120" rx="28" fill="url(#g-icon)"/>
+  <g transform="translate(0 5.5)">
   <g fill="none" stroke="#fff" stroke-linecap="round">
     <path d="M30 60 L60 82 M60 38 L90 52 M60 82 L83.6 85.1" stroke-width="5" stroke-opacity=".45"/>
     <path d="M30 60 L60 38 L90 26" stroke-width="7"/>
@@ -18,5 +19,6 @@
     <circle cx="30" cy="60" r="9"/>
     <circle cx="60" cy="38" r="9"/>
     <circle cx="90" cy="26" r="9"/>
+  </g>
   </g>
 </g></svg>
