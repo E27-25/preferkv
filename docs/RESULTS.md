@@ -22,7 +22,7 @@ In the paper's ablation, persistent frequency drives the gain; varying the branc
 ## When to use it
 
 <p align="center">
-  <img src="../assets/panels/when.png" width="880" alt="When to use it: tight agent loops, keep LRU (engine default); prefixes return within tens of requests, use the built-in LFU (--radix-eviction-policy lfu); prefixes return after hundreds to thousands of requests, use PREFER (patches, persistent counts)">
+  <img src="../assets/panels/when.webp" width="880" alt="When to use it: tight agent loops, keep LRU (engine default); prefixes return within tens of requests, use the built-in LFU (--radix-eviction-policy lfu); prefixes return after hundreds to thousands of requests, use PREFER (patches, persistent counts)">
 </p>
 
 When prefixes return within tens of requests, as in the constructed live workloads, SGLang's built-in LFU (`--radix-eviction-policy lfu`) already gains +25–29%, and persistent counts add no significant improvement.

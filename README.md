@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" width="880" alt="preferkv: persistent-frequency KV-cache eviction for LLM prefix caching. SGLang v0.5.18, vLLM v0.24.0, iSAI-NLP 2026">
+  <img src="assets/banner.webp" width="880" alt="preferkv: persistent-frequency KV-cache eviction for LLM prefix caching. SGLang v0.5.18, vLLM v0.24.0, iSAI-NLP 2026">
 </p>
 
 <p align="center">
@@ -32,8 +32,8 @@ vLLM and SGLang cache the KV state of shared prompt prefixes, and evict the leas
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/features_dark.png">
-    <img src="assets/features_light.png" width="880" alt="Engine patches for SGLang v0.5.18 and vLLM v0.24.0; a workload advisor that recommends PREFER only where it beats LRU; a simulator with a Belady reference and an infinite-cache ceiling; a pure-Python core with no dependencies">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features_dark.webp">
+    <img src="assets/features_light.webp" width="880" alt="Engine patches for SGLang v0.5.18 and vLLM v0.24.0; a workload advisor that recommends PREFER only where it beats LRU; a simulator with a Belady reference and an infinite-cache ceiling; a pure-Python core with no dependencies">
   </picture>
 </p>
 
@@ -45,7 +45,7 @@ vLLM and SGLang cache the KV state of shared prompt prefixes, and evict the leas
 </p>
 
 <p align="center">
-  <img src="assets/panels/results.png" width="880" alt="Results at a glance: 1.8 times LRU's hit rate on a production trace (simulation); +25 to 31% hit rate live on SGLang over 8 seeds; +10.5% throughput on Qwen3-8B under load. Caveat: 7 to 15% worse on tight agent loops, where the advisor keeps LRU">
+  <img src="assets/panels/results.webp" width="880" alt="Results at a glance: 1.8 times LRU's hit rate on a production trace (simulation); +25 to 31% hit rate live on SGLang over 8 seeds; +10.5% throughput on Qwen3-8B under load. Caveat: 7 to 15% worse on tight agent loops, where the advisor keeps LRU">
 </p>
 
 It also gains **+6.3%** hit rate on vLLM. See the [full results](docs/RESULTS.md), including where PREFER does not help.
@@ -57,7 +57,7 @@ It also gains **+6.3%** hit rate on vLLM. See the [full results](docs/RESULTS.md
 </p>
 
 <p align="center">
-  <img src="assets/panels/how.png" width="880" alt="How it works: LRU evicts the oldest leaf, the hot prefix A2, and misses; PREFER evicts the one-shot tail w and keeps A2 with frequency 40. Score = log(1 + persistent frequency) + 0.9 log(1 + branchiness)">
+  <img src="assets/panels/how.webp" width="880" alt="How it works: LRU evicts the oldest leaf, the hot prefix A2, and misses; PREFER evicts the one-shot tail w and keeps A2 with frequency 40. Score = log(1 + persistent frequency) + 0.9 log(1 + branchiness)">
 </p>
 
 <sub>Animation also available as [MP4](assets/anim/how-prefer-works.mp4). More detail in [docs/RESULTS.md](docs/RESULTS.md).</sub>
@@ -65,7 +65,7 @@ It also gains **+6.3%** hit rate on vLLM. See the [full results](docs/RESULTS.md
 ## Getting Started
 
 <p align="center">
-  <img src="assets/panels/quickstart.png" width="880" alt="Quickstart terminal: pip install from GitHub, then preferkv demo prints USE PREFER for a multi-tenant workload (+75.8%) and STICK WITH LRU for an agent burst workload (-9.1%)">
+  <img src="assets/panels/quickstart.webp" width="880" alt="Quickstart terminal: pip install from GitHub, then preferkv demo prints USE PREFER for a multi-tenant workload (+75.8%) and STICK WITH LRU for an agent burst workload (-9.1%)">
 </p>
 
 ```bash
@@ -104,7 +104,7 @@ Issues and pull requests are welcome, especially ports of the patches to newer e
 ## Paper
 
 <p align="center">
-  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper_panel.png" width="880" alt="PREFER: Persistent-Frequency KV-Cache Eviction for LLM Prefix Caching. Watin Promfiy, Chaloemphon Sirikayon, Panwit Tuwanut, Suvit Poomrittigul (KMITL). iSAI-NLP 2026, IEEE. First page and thumbnails of all six pages; click to read the PDF"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper_panel.webp" width="880" alt="PREFER: Persistent-Frequency KV-Cache Eviction for LLM Prefix Caching. Watin Promfiy, Chaloemphon Sirikayon, Panwit Tuwanut, Suvit Poomrittigul (KMITL). iSAI-NLP 2026, IEEE. First page and thumbnails of all six pages; click to read the PDF"></a>
 </p>
 
 <details>
