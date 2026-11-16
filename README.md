@@ -85,6 +85,25 @@ Apply the patch inside `site-packages`, then start the server as usual. For SGLa
 
 Issues and pull requests are welcome, especially ports of the patches to newer engine releases. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Paper
+
+<p align="center">
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper_panel.png" width="880" alt="PREFER: Persistent-Frequency KV-Cache Eviction for LLM Prefix Caching. Watin Promfiy, Chaloemphon Sirikayon, Panwit Tuwanut, Suvit Poomrittigul (KMITL). iSAI-NLP 2026, IEEE. First page and thumbnails of all six pages; click to read the PDF"></a>
+</p>
+
+<details>
+<summary><b>Preview all 6 pages</b></summary>
+<br>
+<p align="center">
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-1.png" width="48%" alt="Paper page 1"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-2.png" width="48%" alt="Paper page 2"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-3.png" width="48%" alt="Paper page 3"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-4.png" width="48%" alt="Paper page 4"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-5.png" width="48%" alt="Paper page 5"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-6.png" width="48%" alt="Paper page 6"></a>
+</p>
+</details>
+
 ## Citation
 
 If you use preferkv or PREFER in your research, please cite:
@@ -103,7 +122,7 @@ If you use preferkv or PREFER in your research, please cite:
 
 The code is released under the [MIT License](LICENSE). The files in `patches/` modify Apache-2.0 sources of SGLang and vLLM. The [paper](paper/PREFER_iSAI-NLP2026.pdf) is © 2026 IEEE: personal use is permitted, and any other use requires permission from IEEE.
 
-The mascot images in `assets/mascot/`, the banner, and the social preview card are fan art of Fern from *Frieren: Beyond Journey's End* (© Kanehito Yamada, Tsukasa Abe / Shogakukan). They are not covered by the MIT License, and this project is not affiliated with or endorsed by the rights holders.
+The mascot images in `assets/mascot/`, the banner, the paper panel, and the social preview card contain fan art of Fern from *Frieren: Beyond Journey's End* (© Kanehito Yamada, Tsukasa Abe / Shogakukan). They are not covered by the MIT License, and this project is not affiliated with or endorsed by the rights holders.
 
 <p align="center">
   <img src="assets/mascot/mascot-reading.png" width="110" alt="preferkv mascot reading a book (fan art)"><br>
