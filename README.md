@@ -50,6 +50,10 @@ vLLM and SGLang cache the KV state of shared prompt prefixes, and evict the leas
 
 It also gains **+6.3%** hit rate on vLLM. See the [full results](docs/RESULTS.md), including where PREFER does not help.
 
+<p align="center">
+  <img src="assets/panels/fit.webp" width="880" alt="Where it fits. Good fit: multi-tenant serving (+25 to 31% live), agent sessions that resume (+25 to 27% live), RAG with popular documents (+14.5% live), long-running chat traffic (1.8 times in simulation). Not needed: tight agent loops (7 to 15% worse, keep LRU), reuse within a few dozen requests (use the built-in LFU), plenty of KV memory (+0.4 to 3%). Not sure? Run preferkv advise on your trace">
+</p>
+
 ## How it works
 
 <p align="center">
