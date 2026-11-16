@@ -44,15 +44,33 @@ vLLM and SGLang cache the KV state of shared prompt prefixes, and evict the leas
   </picture>
 </p>
 
-On production traces PREFER reaches **1.8× LRU's hit rate**, where classic policies (ARC, in-cache LFU, LIRS) reach at most 1.19×. Live on SGLang it raises the hit rate by **25–31%** over LRU. It also gains **+6.3%** on vLLM and up to **+10.5% throughput** on an 8B model under load. On tight agent loops it loses, and the advisor keeps LRU there. See [full results](docs/RESULTS.md).
+<p align="center">
+  <img src="assets/panels/results.png" width="880" alt="Results at a glance: 1.8 times LRU's hit rate on a production trace (simulation); +25 to 31% hit rate live on SGLang over 8 seeds; +10.5% throughput on Qwen3-8B under load. Caveat: 7 to 15% worse on tight agent loops, where the advisor keeps LRU">
+</p>
+
+It also gains **+6.3%** hit rate on vLLM. See the [full results](docs/RESULTS.md), including where PREFER does not help.
+
+## How it works
+
+<p align="center">
+  <img src="assets/anim/how-prefer-works.gif" width="880" alt="Animation: a 4-slot cache under LRU and under PREFER. Popular prefix A (used 3 times) sits next to one-shot blocks. As one-shot blocks u4 and u5 arrive, LRU evicts A because it is oldest, while PREFER evicts the least-frequent one-shot blocks. When A returns, LRU misses and PREFER hits">
+</p>
+
+<p align="center">
+  <img src="assets/panels/how.png" width="880" alt="How it works: LRU evicts the oldest leaf, the hot prefix A2, and misses; PREFER evicts the one-shot tail w and keeps A2 with frequency 40. Score = log(1 + persistent frequency) + 0.9 log(1 + branchiness)">
+</p>
+
+<sub>Animation also available as [MP4](assets/anim/how-prefer-works.mp4). More detail in [docs/RESULTS.md](docs/RESULTS.md).</sub>
 
 ## Getting Started
+
+<p align="center">
+  <img src="assets/panels/quickstart.png" width="880" alt="Quickstart terminal: pip install from GitHub, then preferkv demo prints USE PREFER for a multi-tenant workload (+75.8%) and STICK WITH LRU for an agent burst workload (-9.1%)">
+</p>
 
 ```bash
 pip install git+https://github.com/E27-25/preferkv
 ```
-
-<img src="assets/mascot/mascot-curious.png" align="right" width="110" alt="Mascot with a question mark (fan art)">
 
 Check whether PREFER helps your workload. The trace is JSON Lines, one list of block ids per request:
 
@@ -71,8 +89,6 @@ hit_len = cache.access([12, 45, 9, 88])      # leading blocks served from cache
 ```
 
 ## SGLang and vLLM
-
-<img src="assets/mascot/mascot-cheer.png" align="right" width="120" alt="Cheering mascot (fan art)">
 
 | Engine | Patch | Live gain vs LRU |
 |:--|:--|:--|
@@ -122,7 +138,7 @@ If you use preferkv or PREFER in your research, please cite:
 
 The code is released under the [MIT License](LICENSE). The files in `patches/` modify Apache-2.0 sources of SGLang and vLLM. The [paper](paper/PREFER_iSAI-NLP2026.pdf) is © 2026 IEEE: personal use is permitted, and any other use requires permission from IEEE.
 
-The mascot images in `assets/mascot/`, the banner, the paper panel, and the social preview card contain fan art of Fern from *Frieren: Beyond Journey's End* (© Kanehito Yamada, Tsukasa Abe / Shogakukan). They are not covered by the MIT License, and this project is not affiliated with or endorsed by the rights holders.
+The mascot images in `assets/mascot/` and the images that include them (the banner, the panels in `assets/panels/`, the paper panel, the animation in `assets/anim/`, and the social preview card) contain fan art of Fern from *Frieren: Beyond Journey's End* (© Kanehito Yamada, Tsukasa Abe / Shogakukan). They are not covered by the MIT License, and this project is not affiliated with or endorsed by the rights holders.
 
 <p align="center">
   <img src="assets/mascot/mascot-reading.png" width="110" alt="preferkv mascot reading a book (fan art)"><br>

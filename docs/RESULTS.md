@@ -5,7 +5,7 @@ All numbers on this page are from the [paper](../paper/PREFER_iSAI-NLP2026.pdf).
 ## How it works
 
 <p align="center">
-  <img src="../assets/mechanism.gif" width="680" alt="Animation: on a full cache, LRU evicts the hot prefix A and misses; PREFER keeps A and hits">
+  <img src="../assets/anim/how-prefer-works.gif" width="880" alt="Animation: under LRU the popular prefix A is evicted by one-shot blocks and misses on return; under PREFER it survives and hits">
 </p>
 
 ```text
@@ -21,20 +21,9 @@ In the paper's ablation, persistent frequency drives the gain; varying the branc
 
 ## When to use it
 
-```mermaid
-flowchart TD
-    A[Your serving workload] --> B{preferkv advise}
-    B -->|recency-heavy, tight agent loops| L[Keep LRU, the engine default]
-    B -->|frequency-favorable| C{How far apart are reuses of a prefix?}
-    C -->|tens of requests| S[Turn on the built-in LFU of the engine]
-    C -->|hundreds to thousands of requests| P[PREFER with persistent frequency]
-    classDef keep fill:#F5F1FA,stroke:#A898C2,color:#1F1A2B;
-    classDef good fill:#E9E1F5,stroke:#9B7FCB,color:#3B2A5A;
-    classDef best fill:#D9CCEC,stroke:#6A4C93,color:#1F1A2B;
-    class L keep
-    class S good
-    class P best
-```
+<p align="center">
+  <img src="../assets/panels/when.png" width="880" alt="When to use it: tight agent loops, keep LRU (engine default); prefixes return within tens of requests, use the built-in LFU (--radix-eviction-policy lfu); prefixes return after hundreds to thousands of requests, use PREFER (patches, persistent counts)">
+</p>
 
 When prefixes return within tens of requests, as in the constructed live workloads, SGLang's built-in LFU (`--radix-eviction-policy lfu`) already gains +25–29%, and persistent counts add no significant improvement.
 
