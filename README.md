@@ -15,9 +15,9 @@
 </p>
 
 <p align="center">
-  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="https://img.shields.io/badge/iSAI--NLP-2026-4338CA?style=flat-square" alt="iSAI-NLP 2026"></a>
-  <a href="https://www.python.org"><img src="https://img.shields.io/badge/python-3.8%2B-3776AB?style=flat-square" alt="Python 3.8+"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-64748B?style=flat-square" alt="MIT license"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="https://img.shields.io/badge/iSAI--NLP-2026-6A4C93?style=flat-square" alt="iSAI-NLP 2026"></a>
+  <a href="https://www.python.org"><img src="https://img.shields.io/badge/python-3.8%2B-8E6CC0?style=flat-square" alt="Python 3.8+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3B2A5A?style=flat-square" alt="MIT license"></a>
 </p>
 
 ---

@@ -28,9 +28,9 @@ flowchart TD
     B -->|frequency-favorable| C{How far apart are reuses of a prefix?}
     C -->|tens of requests| S[Turn on the built-in LFU of the engine]
     C -->|hundreds to thousands of requests| P[PREFER with persistent frequency]
-    classDef keep fill:#f1f5f9,stroke:#94a3b8,color:#0f172a;
-    classDef good fill:#e0f2fe,stroke:#0ea5e9,color:#0c4a6e;
-    classDef best fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b;
+    classDef keep fill:#F5F1FA,stroke:#A898C2,color:#1F1A2B;
+    classDef good fill:#E9E1F5,stroke:#9B7FCB,color:#3B2A5A;
+    classDef best fill:#D9CCEC,stroke:#6A4C93,color:#1F1A2B;
     class L keep
     class S good
     class P best
