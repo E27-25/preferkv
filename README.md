@@ -31,6 +31,8 @@
 
 ## About
 
+<img src="assets/mascot/mascot-staff.png" align="right" width="150" alt="preferkv mascot: chibi mage with a staff (fan art)">
+
 vLLM and SGLang cache the KV state of shared prompt prefixes, and evict the least recently used (LRU) block when memory runs out. On real traffic most blocks are used only once, so LRU often evicts a popular prefix just to keep a block nobody will ask for again.
 
 **PREFER** evicts by how often a prefix is used instead. It keeps those counts even after the block is evicted, which is the detail that makes the difference. preferkv provides:
@@ -86,6 +88,8 @@ Issues and pull requests are welcome, especially ports of the patches to newer e
 
 ## Citation
 
+If you use preferkv or PREFER in your research, please cite:
+
 ```bibtex
 @inproceedings{promfiy2026prefer,
   title     = {{PREFER}: Persistent-Frequency {KV}-Cache Eviction for {LLM} Prefix Caching},
@@ -99,3 +103,10 @@ Issues and pull requests are welcome, especially ports of the patches to newer e
 ## License
 
 The code is released under the [MIT License](LICENSE). The files in `patches/` modify Apache-2.0 sources of SGLang and vLLM. The [paper](paper/PREFER_iSAI-NLP2026.pdf) is © 2026 IEEE: personal use is permitted, and any other use requires permission from IEEE.
+
+The mascot images in `assets/mascot/` and the social preview card are fan art of Fern from *Frieren: Beyond Journey's End* (© Kanehito Yamada, Tsukasa Abe / Shogakukan). They are not covered by the MIT License, and this project is not affiliated with or endorsed by the rights holders.
+
+<p align="center">
+  <img src="assets/mascot/mascot-reading.png" width="110" alt="preferkv mascot reading a book (fan art)"><br>
+  <sub>Thanks for reading.</sub>
+</p>
