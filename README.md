@@ -42,12 +42,12 @@ vLLM and SGLang cache the KV state of shared prompt prefixes, and evict the leas
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/live_sglang_dark.png">
-    <img src="assets/live_sglang_light.png" width="760" alt="Live SGLang results: frequency eviction gains about +25 to +31% hit rate over LRU on multi-tenant and resumption workloads, and loses 7 to 15% on a tight agent loop">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/hero_dark.png">
+    <img src="assets/hero_light.png" width="880" alt="Left: on the Mooncake conversation trace at a 2k-block cache, PREFER reaches 1.8 times LRU's hit rate, versus 1.06 for ARC and in-cache LFU and 1.19 for LIRS. Right: live on SGLang, PREFER gains +30.5% hit rate on multi-tenant serving and +27.3% on session resumption, and loses 15.3% on a tight agent loop">
   </picture>
 </p>
 
-Live on SGLang, frequency eviction raises the prefix-cache hit rate by **25–31%** over LRU, and loses on tight agent loops, where the advisor keeps LRU. It also reaches **+6.3%** on vLLM and up to **+10.5% throughput** on an 8B model under load. See [full results](docs/RESULTS.md).
+On production traces PREFER reaches **1.8× LRU's hit rate**, where classic policies (ARC, in-cache LFU, LIRS) reach at most 1.19×. Live on SGLang it raises the hit rate by **25–31%** over LRU. It also gains **+6.3%** on vLLM and up to **+10.5% throughput** on an 8B model under load. On tight agent loops it loses, and the advisor keeps LRU there. See [full results](docs/RESULTS.md).
 
 ## Getting Started
 

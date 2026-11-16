@@ -42,6 +42,13 @@ Persistent counts matter at production-trace reuse distances, where the 90th per
 
 ## Live on SGLang
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../assets/live_sglang_dark.png">
+    <img src="../assets/live_sglang_light.png" width="760" alt="Hit-rate change vs LRU for SGLang's built-in LFU and PREFER on six workloads: about +25 to +31% on multi-tenant and resumption, -15% and -7% on the burst loop">
+  </picture>
+</p>
+
 SGLang v0.5.18, Qwen2.5-1.5B, concurrency 1. Each value is the mean ± 95% CI over 8 seeds, given as % change vs LRU (positive is better).
 
 | workload, KV budget | LRU hit | stock LFU | PREFER | PREFER mean TTFT ↓ | PREFER p99 TTFT ↓ | PREFER throughput |
