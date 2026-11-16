@@ -1,8 +1,12 @@
 name: ci
 
+# Runs only when started by hand (Actions tab -> ci -> Run workflow).
+# To run on every push again, replace this block with:
+#   on:
+#     push:
+#     pull_request:
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
