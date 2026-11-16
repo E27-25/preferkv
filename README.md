@@ -1,11 +1,6 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/preferkv-logo-dark.svg">
-    <img alt="preferkv" src="assets/logo/preferkv-logo-light.svg" width="400">
-  </picture>
+  <img src="assets/banner.png" width="880" alt="preferkv: persistent-frequency KV-cache eviction for LLM prefix caching. SGLang v0.5.18, vLLM v0.24.0, iSAI-NLP 2026">
 </p>
-
-<h3 align="center">Persistent-frequency KV-cache eviction for LLM prefix caching</h3>
 
 <p align="center">
 | <a href="paper/PREFER_iSAI-NLP2026.pdf"><b>Paper</b></a>
@@ -31,16 +26,16 @@
 
 ## About
 
-<img src="assets/mascot/mascot-staff.png" align="right" width="150" alt="preferkv mascot: chibi mage with a staff (fan art)">
-
 vLLM and SGLang cache the KV state of shared prompt prefixes, and evict the least recently used (LRU) block when memory runs out. On real traffic most blocks are used only once, so LRU often evicts a popular prefix just to keep a block nobody will ask for again.
 
-**PREFER** evicts by how often a prefix is used instead. It keeps those counts even after the block is evicted, which is the detail that makes the difference. preferkv provides:
+**PREFER** evicts by how often a prefix is used instead. It keeps those counts even after the block is evicted, which is the detail that makes the difference.
 
-- **Engine patches** for SGLang v0.5.18 and vLLM v0.24.0
-- **A workload advisor** that recommends PREFER only where it beats LRU
-- **A simulator** with a Belady reference, to measure how much hit rate a policy leaves on the table
-- **A pure-Python core** with no dependencies
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features_dark.png">
+    <img src="assets/features_light.png" width="880" alt="Engine patches for SGLang v0.5.18 and vLLM v0.24.0; a workload advisor that recommends PREFER only where it beats LRU; a simulator with a Belady reference and an infinite-cache ceiling; a pure-Python core with no dependencies">
+  </picture>
+</p>
 
 <p align="center">
   <picture>
@@ -56,6 +51,8 @@ On production traces PREFER reaches **1.8× LRU's hit rate**, where classic poli
 ```bash
 pip install git+https://github.com/E27-25/preferkv
 ```
+
+<img src="assets/mascot/mascot-curious.png" align="right" width="110" alt="Mascot with a question mark (fan art)">
 
 Check whether PREFER helps your workload. The trace is JSON Lines, one list of block ids per request:
 
@@ -74,6 +71,8 @@ hit_len = cache.access([12, 45, 9, 88])      # leading blocks served from cache
 ```
 
 ## SGLang and vLLM
+
+<img src="assets/mascot/mascot-cheer.png" align="right" width="120" alt="Cheering mascot (fan art)">
 
 | Engine | Patch | Live gain vs LRU |
 |:--|:--|:--|
@@ -104,7 +103,7 @@ If you use preferkv or PREFER in your research, please cite:
 
 The code is released under the [MIT License](LICENSE). The files in `patches/` modify Apache-2.0 sources of SGLang and vLLM. The [paper](paper/PREFER_iSAI-NLP2026.pdf) is © 2026 IEEE: personal use is permitted, and any other use requires permission from IEEE.
 
-The mascot images in `assets/mascot/` and the social preview card are fan art of Fern from *Frieren: Beyond Journey's End* (© Kanehito Yamada, Tsukasa Abe / Shogakukan). They are not covered by the MIT License, and this project is not affiliated with or endorsed by the rights holders.
+The mascot images in `assets/mascot/`, the banner, and the social preview card are fan art of Fern from *Frieren: Beyond Journey's End* (© Kanehito Yamada, Tsukasa Abe / Shogakukan). They are not covered by the MIT License, and this project is not affiliated with or endorsed by the rights holders.
 
 <p align="center">
   <img src="assets/mascot/mascot-reading.png" width="110" alt="preferkv mascot reading a book (fan art)"><br>

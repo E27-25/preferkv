@@ -84,6 +84,8 @@ Counts that reset on eviction (in-cache LFU, ARC) stay close to LRU; persistent 
 
 ## Limitations
 
+<img src="../assets/mascot/mascot-sleepy.png" align="right" width="140" alt="Sleepy mascot (fan art)">
+
 - "Gap closed" is measured against a feasible Belady schedule, not a proven optimum.
 - Live runs used one 16 GB consumer GPU, mostly at concurrency 1, on constructed workloads rather than replays of the production traces.
 - The load sweep, cross-engine, and application results are single runs per configuration.
