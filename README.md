@@ -115,12 +115,12 @@ Issues and pull requests are welcome, especially ports of the patches to newer e
 <summary><b>Preview all 6 pages</b></summary>
 <br>
 <p align="center">
-  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-1.png" width="48%" alt="Paper page 1"></a>
-  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-2.png" width="48%" alt="Paper page 2"></a>
-  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-3.png" width="48%" alt="Paper page 3"></a>
-  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-4.png" width="48%" alt="Paper page 4"></a>
-  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-5.png" width="48%" alt="Paper page 5"></a>
-  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-6.png" width="48%" alt="Paper page 6"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-1.webp" width="48%" alt="Paper page 1"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-2.webp" width="48%" alt="Paper page 2"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-3.webp" width="48%" alt="Paper page 3"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-4.webp" width="48%" alt="Paper page 4"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-5.webp" width="48%" alt="Paper page 5"></a>
+  <a href="paper/PREFER_iSAI-NLP2026.pdf"><img src="assets/paper/page-6.webp" width="48%" alt="Paper page 6"></a>
 </p>
 </details>
 
